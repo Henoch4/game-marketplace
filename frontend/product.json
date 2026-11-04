@@ -1,9 +1,9 @@
 {
-  "abiSource": "pending-current-source",
+  "abiSource": "runtime-matched-current-source",
   "repo": "loot-bazaar",
   "brand": "Loot Bazaar",
   "summary": "List an NFT, inspect its price, and buy through the marketplace contract.",
-  "address": null,
+  "address": "0x6C31c5d60Cb704cd289179CE6bbbABf829B1b332",
   "owner": null,
   "abi": [
     {
