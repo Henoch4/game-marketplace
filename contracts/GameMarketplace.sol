@@ -19,6 +19,10 @@ abstract contract Ownable {
     function owner() public view returns (address) { return _owner; }
 }
 
+interface IGameNFT {
+    function ownerOf(uint256 tokenId) external view returns (address);
+    function transferFrom(address from, address to, uint256 tokenId) external;
+}
 contract GameMarketplace is ReentrancyGuard, Ownable {
     struct Listing {
         address seller;
@@ -40,6 +44,10 @@ contract GameMarketplace is ReentrancyGuard, Ownable {
     function listItem(address nftContract, uint256 tokenId, uint256 price)
         external nonReentrant returns (uint256) {
         require(price > 0, "Zero price");
+        require(nftContract.code.length > 0, "Invalid NFT contract");
+        require(IGameNFT(nftContract).ownerOf(tokenId) == msg.sender, "Not NFT owner");
+        IGameNFT(nftContract).transferFrom(msg.sender, address(this), tokenId);
+        require(IGameNFT(nftContract).ownerOf(tokenId) == address(this), "NFT escrow failed");
         Listing storage l = listings.push();
         l.seller = msg.sender;
         l.nftContract = nftContract;
@@ -62,6 +70,7 @@ contract GameMarketplace is ReentrancyGuard, Ownable {
         l.sold = true;
         l.active = false;
         totalVolume += l.price;
+        IGameNFT(l.nftContract).transferFrom(address(this), msg.sender, l.tokenId);
         // FIX: pay the seller the sale proceeds — was a one-way lockbox before.
         (bool ok,) = payable(l.seller).call{value: l.price}("");
         require(ok, "ETH transfer failed");
@@ -74,6 +83,7 @@ contract GameMarketplace is ReentrancyGuard, Ownable {
         require(!l.sold, "Already sold");
         require(l.seller == msg.sender, "Not seller");
         l.active = false;
+        IGameNFT(l.nftContract).transferFrom(address(this), l.seller, l.tokenId);
         emit ListingCancelled(lid, msg.sender);
     }
 
